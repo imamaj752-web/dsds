@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Manager</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+        nav {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        nav a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        nav span {
+            margin-right: 15px;
+            color: #333;
+        }
+        .logout-btn {
+            float: right;
+            color: #dc3545;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Головна</a>
+
+        {% if 'user_id' in session %}
+            <span>Поздравляем <b>{{ session.login }}</b>!</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Вийти</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Вхід</a>
+            <a href="{{ url_for('register') }}">Реєстрація</a>
+        {% endif %}
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

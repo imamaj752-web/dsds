@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="clock" style="font-size: 48px; font-weight: bold; color: #2c3e50; margin-bottom: 20px; font-family: monospace; background: #e3e8ed; padding: 10px; border-radius: 10px; text-align: center;">00:00:00</div>
+
+    <div id="alert" style="display: none; background: #ff4d4f; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 18px;">УВАГА</div>
+
+    <h1>Додати нагадування</h1>
+
+    <form action="{{ url_for('add_habit') }}" method="POST">
+        <label for="task">Завдання:</label>
+        <input type="text" id="task" name="task" placeholder="Введіть текст завдання" required>
+
+        <label for="date">Час нагадування:</label>
+        <input type="datetime-local" id="date" name="date" required>
+
+        <button type="submit">Додати</button>
+    </form>
+
+    <h2>Список завдань</h2>
+    <ul>
+        {% for habit in habits %}
+            <li class="habit-item" data-task="{{ habit.task }}" data-time="{{ habit.target_date }}" style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e9ecef;">
+                <span><strong>{{ habit.task }}</strong> на {{ habit.target_date }}</span>
+                <a href="{{ url_for('delete_habit', id=habit.id) }}" style="color: red; text-decoration: none; font-weight: bold;">Видалити</a>
+            </li>
+        {% else %}
+            <li>Список завдань порожній.</li>
+        {% endfor %}
+    </ul>
+
+    <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
+
+    <script>
+        const clockElement = document.getElementById('clock');
+        const alarmSound = document.getElementById('alarm-sound');
+        let lastTriggeredMinute = null;
+
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            clockElement.innerText = `${h}:${m}:${s}`;
+
+            const currentMinuteStr = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + 'T' + h + ':' + m;
+
+            if (lastTriggeredMinute === constMinuteStr) return;
+
+            document.querySelectorAll('.habit-item').forEach(item => {
+                const targetTime = item.getAttribute('data-time');
+                const task = item.getAttribute('data-task');
+
+                if (targetTime === constMinuteStr) {
+                    lastTriggeredMinute = constMinuteStr;
+
+                    const alertBox = document.getElementById('alert');
+                    alertBox.innerText = "УВАГА: " + task;
+                    alertBox.style.display = 'block';
+
+                    alarmSound.play().catch(e => console.log("Потрібен клік на сторінці для розблокування аудіо"));
+
+                    setTimeout(() => {
+                        alert("Нагадування: " + task);
+                        alarmSound.pause();
+                        alarmSound.currentTime = 0;
+                    }, 500);
+                }
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if (alarmSound.paused) {
+                alarmSound.load();
+            }
+        }, { once: true });
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+{% endblock %}
