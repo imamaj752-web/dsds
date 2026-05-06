@@ -1,83 +1,242 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker</title>
+    <style>
+        /* Стилі як на твоєму скріншоті */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 50px;
+        }
 
-{% block content %}
-    <div id="clock" style="font-size: 48px; font-weight: bold; color: #2c3e50; margin-bottom: 20px; font-family: monospace; background: #e3e8ed; padding: 10px; border-radius: 10px; text-align: center;">00:00:00</div>
+        .main-card {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
 
-    <div id="alert" style="display: none; background: #ff4d4f; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 18px;">УВАГА</div>
+        .clock-display {
+            background-color: #e9ecef;
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #343a40;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
 
-    <h1>Додати нагадування</h1>
+        h2 {
+            text-align: left;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
 
-    <form action="{{ url_for('add_habit') }}" method="POST">
-        <label for="task">Завдання:</label>
-        <input type="text" id="task" name="task" placeholder="Введіть текст завдання" required>
+        .input-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
 
-        <label for="date">Час нагадування:</label>
-        <input type="datetime-local" id="date" name="date" required>
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
 
-        <button type="submit">Додати</button>
-    </form>
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
 
-    <h2>Список завдань</h2>
-    <ul>
-        {% for habit in habits %}
-            <li class="habit-item" data-task="{{ habit.task }}" data-time="{{ habit.target_date }}" style="display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e9ecef;">
-                <span><strong>{{ habit.task }}</strong> на {{ habit.target_date }}</span>
-                <a href="{{ url_for('delete_habit', id=habit.id) }}" style="color: red; text-decoration: none; font-weight: bold;">Видалити</a>
-            </li>
-        {% else %}
-            <li>Список завдань порожній.</li>
-        {% endfor %}
-    </ul>
+        .btn-add {
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745; /* Твоя зелена кнопка */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
 
-    <audio id="alarm-sound" src="{{ url_for('static', filename='alarm.mp3') }}" preload="auto"></audio>
+        .btn-add:hover {
+            background-color: #218838;
+        }
+
+        .task-list-title {
+            text-align: left;
+            margin-top: 30px;
+            font-size: 1.4rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        .btn-delete {
+            color: #dc3545;
+            background: none;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Екран сирени */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 9999;
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-card">
+        <!-- Годинник з 18:16:05 -->
+        <div id="digitalClock" class="clock-display">00:00:00</div>
+
+        <h2>Додати нагадування</h2>
+
+        <div class="input-group">
+            <label>Завдання:</label>
+            <input type="text" id="taskName" placeholder="Введіть текст завдання">
+        </div>
+
+        <div class="input-group">
+            <label>Час нагадування:</label>
+            <input type="datetime-local" id="taskTime">
+        </div>
+
+        <button class="btn-add" onclick="addNewTask()">Додати</button>
+
+        <h3 class="task-list-title">Список завдань</h3>
+        <div id="tasksContainer">
+            <!-- Тут будуть завдання як "gfr на 2026-05-06T18:16" -->
+        </div>
+    </div>
+
+    <!-- Вікно тривоги -->
+    <div id="overlay">
+        <h1 style="font-size: 3rem;">ЧАС ВИЙШОВ!</h1>
+        <p id="alertTaskName" style="font-size: 1.5rem;"></p>
+        <button onclick="stopSiren()" style="padding: 15px 40px; background: #dc3545; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.2rem;">ВИМКНУТИ СИРЕНУ</button>
+    </div>
+
+    <audio id="sirenAudio" loop>
+        <source src="{{ url_for('static', filename='ser.mp3') }}" type="audio/mpeg">
+    </audio>
 
     <script>
-        const clockElement = document.getElementById('clock');
-        const alarmSound = document.getElementById('alarm-sound');
-        let lastTriggeredMinute = null;
+        const siren = document.getElementById('sirenAudio');
+        const overlay = document.getElementById('overlay');
+        let taskArray = [];
 
+        // Оновлення часу кожну секунду
         function updateClock() {
             const now = new Date();
-            const h = String(now.getHours()).padStart(2, '0');
-            const m = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-            clockElement.innerText = `${h}:${m}:${s}`;
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('digitalClock').innerText = `${hours}:${minutes}:${seconds}`;
 
-            const currentMinuteStr = now.getFullYear() + '-' +
-                String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                String(now.getDate()).padStart(2, '0') + 'T' + h + ':' + m;
+            checkAlarms(now);
+        }
+        setInterval(updateClock, 1000);
 
-            if (lastTriggeredMinute === constMinuteStr) return;
+        function addNewTask() {
+            const name = document.getElementById('taskName').value;
+            const time = document.getElementById('taskTime').value;
 
-            document.querySelectorAll('.habit-item').forEach(item => {
-                const targetTime = item.getAttribute('data-time');
-                const task = item.getAttribute('data-task');
+            if (name && time) {
+                const newTask = {
+                    id: Date.now(),
+                    name: name,
+                    time: new Date(time),
+                    triggered: false
+                };
+                taskArray.push(newTask);
+                renderTasks();
+            }
+        }
 
-                if (targetTime === constMinuteStr) {
-                    lastTriggeredMinute = constMinuteStr;
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            container.innerHTML = '';
+            taskArray.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                // Формат як на скріншоті: gfr на 2026-05-06T18:16
+                item.innerHTML = `
+                    <span><strong>${task.name}</strong> на ${task.time.toISOString().slice(0,16)}</span>
+                    <button class="btn-delete" onclick="removeTask(${task.id})">Видалити</button>
+                `;
+                container.appendChild(item);
+            });
+        }
 
-                    const alertBox = document.getElementById('alert');
-                    alertBox.innerText = "УВАГА: " + task;
-                    alertBox.style.display = 'block';
-
-                    alarmSound.play().catch(e => console.log("Потрібен клік на сторінці для розблокування аудіо"));
-
-                    setTimeout(() => {
-                        alert("Нагадування: " + task);
-                        alarmSound.pause();
-                        alarmSound.currentTime = 0;
-                    }, 500);
+        function checkAlarms(now) {
+            taskArray.forEach(task => {
+                if (!task.triggered && now >= task.time) {
+                    playAlarm(task.name);
+                    task.triggered = true;
                 }
             });
         }
 
-        document.addEventListener('click', () => {
-            if (alarmSound.paused) {
-                alarmSound.load();
-            }
-        }, { once: true });
+        function playAlarm(name) {
+            document.getElementById('alertTaskName').innerText = `Завдання: ${name}`;
+            overlay.style.display = 'flex';
+            siren.play().catch(e => console.log("Натисніть на сторінку для активації звуку"));
+        }
 
-        setInterval(updateClock, 1000);
-        updateClock();
+        function stopSiren() {
+            overlay.style.display = 'none';
+            siren.pause();
+            siren.currentTime = 0;
+        }
+
+        function removeTask(id) {
+            taskArray = taskArray.filter(t => t.id !== id);
+            renderTasks();
+        }
+
+        // Активуємо можливість програвання звуку при першому кліку
+        document.body.addEventListener('click', () => {
+            console.log("Аудіо-контекст активовано");
+        }, {once: true});
     </script>
-{% endblock %}
+</body>
+</html>
